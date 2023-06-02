@@ -20,12 +20,12 @@ class Game:
             self.cur_player = None
             self.maxlab = 3
             pygame.font.init()
-            self.font = pygame.font.Font('../../assets/fonts/Dodgv2.ttf', 18)
-            self.font2 = pygame.font.Font('../../assets/fonts/911v2.ttf', 15)
-            self.font3 = pygame.font.Font('../../assets/fonts/Dodgv2.ttf', 8)
-            self.font4 = pygame.font.Font('../../assets/fonts/911v2.ttf', 150)
-            self.font5 = pygame.font.Font('../../assets/fonts/911v2.ttf', 75)
-            self.font6 = pygame.font.Font('../../assets/fonts/911v2.ttf', 35)
+            self.font = pygame.font.Font('assets/fonts/Dodgv2.ttf', 18)
+            self.font2 = pygame.font.Font('assets/fonts/911v2.ttf', 15)
+            self.font3 = pygame.font.Font('assets/fonts/Dodgv2.ttf', 8)
+            self.font4 = pygame.font.Font('assets/fonts/911v2.ttf', 150)
+            self.font5 = pygame.font.Font('assets/fonts/911v2.ttf', 75)
+            self.font6 = pygame.font.Font('assets/fonts/911v2.ttf', 35)
             self.img = self.font.render('Cars Racing', False, self.BLACK)
             self.labinfo = self.font3.render('Labs', False, self.WHITE)
             self.speedinfo = self.font3.render('km/h', False, self.WHITE)
@@ -37,8 +37,8 @@ class Game:
             # self.game()
 
         def loadCar(self, id):
-            car = pygame.image.load('../../assets/car600.' + str(id) + '.png')
-            car = pygame.transform.scale(pygame.image.load('../../assets/car600.' + str(id) + '.png'),
+            car = pygame.image.load('assets/car600.' + str(id) + '.png')
+            car = pygame.transform.scale(pygame.image.load('assets/car600.' + str(id) + '.png'),
                                          (car.get_width() * 0.5, car.get_height() * 0.5))
             return car
 
