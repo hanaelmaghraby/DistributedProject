@@ -20,9 +20,9 @@ import src.server.network as network
 class MyTableWidget(QWidget):
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
-        # connecion
         self.conn = socket.socket()
         self.connected = False
+        #deployment ip"13.36.229.99"
         self.IP = "192.168.206.1"
         self.port = 450
         # tab UI
@@ -50,8 +50,6 @@ class MyTableWidget(QWidget):
         self.connBtn.clicked.connect(self.connect_server)
         self.disconnBtn = QPushButton("Disconnect")
         self.disconnBtn.clicked.connect(self.disconnect_server)
-        #gridHome.addWidget(self.IPBox, 0, 0, 1, 1)
-        #gridHome.addWidget(self.portBox, 0, 1, 1, 1)
         gridHome.addWidget(self.nameBox, 1, 0, 1, 1)
         gridHome.addWidget(self.connStatus, 1, 1, 1, 1)
         gridHome.addWidget(self.connBtn, 2, 0, 1, 1)
@@ -100,6 +98,7 @@ class MyTableWidget(QWidget):
         # Initialization
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
+
 
     def enter_line(self):
         # assure the person still in rooom before send out
@@ -153,26 +152,26 @@ class MyTableWidget(QWidget):
     def connect_server(self):
         if self.connected == True:
             return
-        name = self.nameLineEdit.text()
-        if name == "":
+        self.name = self.nameLineEdit.text()
+        if self.name == "":
             self.connStatus.setText("Status :" + "Please enter your name")
             return
-        self.userName = name
+        self.userName = self.name
         try:
             self.conn.connect((self.IP, self.port))
         except:
             self.connStatus.setText("Status :" + " Refused")
             self.conn = socket.socket()
             return
-        send_msg = bytes("{REGISTER}" + name, "utf-8")
+        send_msg = bytes("{REGISTER}" + self.name, "utf-8")
         self.conn.send(send_msg)
         self.connected = True
         self.connStatus.setText("Status :" + " Connected")
         self.nameLineEdit.setReadOnly(True)  # This setting is not functional well
         self.tabs.setTabEnabled(1, True)
-        g = start_game()
+        self.g = start_game()
         self.rT = threading.Thread(target=self.updateRoom)
-        self.sg = threading.Thread(target=g.connect_game, args=(name,))
+        self.sg = threading.Thread(target=self.g.connect_game, args=(self.name,))
         self.rT.start()
         self.sg.start()
 
@@ -186,6 +185,9 @@ class MyTableWidget(QWidget):
         self.nameLineEdit.clear()
         self.tabs.setTabEnabled(1, False)
         self.connected = False
+        self.g.run = False
+        self.sg.join()
+        self.g.disconnect_game()
         self.rT.join()
         self.conn.close()
         self.conn = socket.socket()
@@ -219,6 +221,10 @@ class MyTableWidget(QWidget):
         self.sendChoice.setText("Send to: " + text)
 
 class start_game():
+    def __init__(self):
+        self.server = network.Network()
+        self.run = True
+        self.connected = 0
 
     def restartMoves(self):
         keys = pygame.key.get_pressed()
@@ -251,33 +257,33 @@ class start_game():
 
         return move
 
+
     def connect_game(self, name):
         print("thread")
         pygame.init()
-        config = Config()
-        server = network.Network()
-        current_id = server.connect(name)
-        players = server.send("get")
+        self.config = Config()
+
+        self.current_id = self.server.connect(name)
+        self.players = self.server.send("get")
 
         game = Game()
         game.screen = pygame.display.set_mode((game.assets.width, game.assets.height))
         pygame.display.set_caption("Car Racing")
         assets = [(game.assets.track, (0, 0)), (game.assets.start, (502, 160)), (game.assets.borders, (0, 0))]
-        run = True
+
         game.constDraw()
         start = True
         win = False
         sendEndInfo = True
 
-        cur_players = next((x for x in players if x.id == current_id))
+        cur_players = next((x for x in self.players if x.id == self.current_id))
 
-        while run:
+        while self.run:
+            pygame.time.Clock().tick(self.config.FPS)
 
-            pygame.time.Clock().tick(config.FPS)
-
-            if start and cur_players.connection == config.playersNumer:
-                players = server.send("temp")
-                cur_players = next((x for x in players if x.id == current_id))
+            if start and cur_players.connection == self.config.playersNumer:
+                self.players = self.server.send("temp")
+                cur_players = next((x for x in self.players if x.id == self.current_id))
                 start_ticks = pygame.time.get_ticks()
                 game.constDraw()
                 while True:
@@ -286,7 +292,7 @@ class start_game():
                         break
                     game.draw(game.screen, assets, cur_players.lab, cur_players.speed,
                               cur_players.time)
-                    for p in players:
+                    for p in self.players:
                         game.drawCar(game.loadCar(p.id), p.angle, p.position)
                     game.draw_counter(int(seconds))
                     pygame.display.update()
@@ -296,7 +302,7 @@ class start_game():
                 game.constDraw()
 
                 data = "time"
-                players = server.send(data)
+                self.players = self.server.send(data)
                 start = False
 
             keys = pygame.key.get_pressed()
@@ -305,38 +311,42 @@ class start_game():
             for m in self.moves():
                 data += " " + str(m)
 
-            players = server.send(data)
-            if not players:
+            self.players = self.server.send(data)
+            if not self.players:
                 break
-            cur_players = next((x for x in players if x.id == current_id))
+            cur_players = next((x for x in self.players if x.id == self.current_id))
             game.draw(game.screen, assets, cur_players.lab, cur_players.speed, cur_players.time)
 
             if cur_players.showTimer:
                 game.showTimerBonus(cur_players.posTimer)
 
-            for p in players:
+            for p in self.players:
                 game.drawCar(game.loadCar(p.id), p.angle, p.position)
 
             if cur_players.win and not start:
                 game.drawWinner(cur_players.name)
                 keys = self.restartMoves()
                 if keys[0]:
-                    players = server.send("restart")
+                    self.players = self.server.send("restart")
                     start = True
 
                 if keys[1]:
-                    run = False
+                    self.run = False
                 game.draw_end_game_info()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    run = False
+                    self.run = False
 
             pygame.display.update()
-
-        server.disconnect()
+        #self.server.disconnect()
         pygame.quit()
         quit()
+
+
+    def disconnect_game(self):
+        self.server.disconnect()
+        pygame.quit()
 
 
 class Window(QMainWindow):
@@ -354,7 +364,7 @@ class Window(QMainWindow):
         close.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
         close = close.exec()
         if close == QMessageBox.Yes:
-            self.table_widget.disconnect_server()  # disconnect to server before exit
+            self.table_widget.disconnect_server() # disconnect to server before exit
             event.accept()
         else:
             event.ignore()

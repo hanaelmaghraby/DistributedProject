@@ -43,31 +43,27 @@ class main_server:
             print(str(e))
             print("[SERVER] Server could not start")
             quit()
-
         self.game_socket.listen()  # listen for game connections
         print(f"[SERVER] Server Started with local ip {self.SERVER_IP}")
         self.chat_socket.listen() # listen for chat connections
         print("waiting for connection")
-
         while True:
             chat_host, chat_addr = self.chat_socket.accept()
             print("[CONNECTION] chat - Connected to:", chat_addr)
             start_new_thread(self.handle_client, (chat_host,))
 
             waiting_for_game = True
-
             while waiting_for_game:
-                print("waiting for game to connect")
                 game_host, game_addr = self.game_socket.accept()
                 print("[CONNECTION] game - Connected to:", game_addr)
                 self.init.connections += 1
                 if self.init.connections <= self.config.playersNumer:
-                    print("thread")
-                    t = threading.Thread(target=self.threaded_client, args=(game_host, self.playersId.pop(0),))
-                    #start_new_thread(self.threaded_client, (game_host, self.playersId.pop(0)))
+                    t = threading.Thread(target=self.threaded_client, args=(game_host, self.playersId.pop(0), ))
                     t.start()
                     waiting_for_game = False
-                    print("done")
+                else:
+                    print("Can't join - maximum number of players reached")
+                    waiting_for_game = False
 
     def handle_client(self, client):  # Takes client socket as argument.
         """Handles a single client connection."""
@@ -102,6 +98,7 @@ class main_server:
 
             if msg == "{QUIT}":
                 client.close()
+                db.child("players").child(name).remove()
                 try:
                     del self.clients[client]
                 except KeyError:
@@ -395,6 +392,5 @@ class main_server:
             self.init.removePlayer(clientsList)  # remove client information from players list
             self.game.players.remove(player)
         conn.close()  # close connection
-
 main_server()
 
