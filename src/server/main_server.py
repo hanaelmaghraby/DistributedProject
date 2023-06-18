@@ -15,6 +15,7 @@ import pygame
 
 db = firebase.database()
 
+
 class main_server:
     def __init__(self):
         self.start = timer()
@@ -45,7 +46,7 @@ class main_server:
             quit()
         self.game_socket.listen()  # listen for game connections
         print(f"[SERVER] Server Started with local ip {self.SERVER_IP}")
-        self.chat_socket.listen() # listen for chat connections
+        self.chat_socket.listen()  # listen for chat connections
         print("waiting for connection")
         while True:
             chat_host, chat_addr = self.chat_socket.accept()
@@ -58,8 +59,8 @@ class main_server:
                 print("[CONNECTION] game - Connected to:", game_addr)
                 self.init.connections += 1
                 if self.init.connections <= self.config.playersNumer:
-                    t = threading.Thread(target=self.threaded_client, args=(game_host, self.playersId.pop(0), ))
-                    t.start()
+                    self.t = threading.Thread(target=self.threaded_client, args=(game_host, self.playersId.pop(0),))
+                    self.t.start()
                     waiting_for_game = False
                 else:
                     print("Can't join - maximum number of players reached")
@@ -127,19 +128,19 @@ class main_server:
     def send_clients(self):
         self.send_message("{CLIENTS}" + self.get_clients_names(), broadcast=True)
 
-    def get_clients_names(self,separator="|"):
+    def get_clients_names(self, separator="|"):
         names = []
         for _, name in self.clients.items():
             names.append(name)
         return separator.join(names)
 
-    def find_client_socket(self,name):
+    def find_client_socket(self, name):
         for cli_sock, cli_name in self.clients.items():
             if cli_name == name:
                 return cli_sock
         return None
 
-    def send_message(self,msg, prefix="", destination=None, broadcast=False):
+    def send_message(self, msg, prefix="", destination=None, broadcast=False):
         send_msg = bytes(prefix + msg, "utf-8")
         if broadcast:
             """Broadcasts a message to all the clients."""
@@ -149,13 +150,20 @@ class main_server:
             if destination is not None:
                 destination.send(send_msg)
 
+    def start_again(self, _id):
+        self.t.join()
+        game_host, game_addr = self.game_socket.accept()
+        print("[CONNECTED AGAIN] Connected to:", game_addr)
+        tnew = threading.Thread(target=self.threaded_client, args=(game_host, _id,))
+        tnew.start()
+
     def threaded_client(self, conn, _id):
         data = conn.recv(16)
         name = data.decode("utf-8")
         print("[LOG]", name, "connected to the server.")
-        keys=db.child("players").shallow().get().val()
-        flag=True
-        if(keys):
+        keys = db.child("players").shallow().get().val()
+        flag = True
+        if (keys):
             for i in keys:
                 if (name == i):
                     flag = False
@@ -173,7 +181,6 @@ class main_server:
                                              self.winner,
                                              self.init.connections)
                     self.init.addPlayer(clientsList)
-
 
         if (flag):
             player = Player(self.game, self, self.init, self.config, _id, None, self.config.player['speed'],
@@ -211,45 +218,99 @@ class main_server:
         restart = False
         run = True
         while run:
-            data = conn.recv(1024)
-            if not data:
-                break
-            self.time = (pygame.time.get_ticks() - start_time)
-            data = data.decode("utf-8")
-            # look for specific commands from received data
-            if data.split(" ")[0] == "move":
-                m, s = divmod(int(self.time / 1000), 60)
-                if int(s) == self.game.countTimer and not self.game.showTimer:
-                    self.game.showTimer = True
-                    self.game.positionTimer = self.config.timer['positon'][randint(0, 2)]
-                    # self.game.positionTimer = self.config.timer['positon'][0]
+            try:
+                data = conn.recv(2048)
+                if not data:
+                    break
+                self.time = (pygame.time.get_ticks() - start_time)
+                data = data.decode("utf-8")
+                # look for specific commands from received data
+                if data.split(" ")[0] == "move":
+                    m, s = divmod(int(self.time / 1000), 60)
+                    if int(s) == self.game.countTimer and not self.game.showTimer:
+                        self.game.showTimer = True
+                        self.game.positionTimer = self.config.timer['positon'][randint(0, 2)]
+                        # self.game.positionTimer = self.config.timer['positon'][0]
 
-                split_data = data.split(" ")
-                key = []
-                for i in range(1, len(split_data)):
-                    key.append(split_data[i])
+                    split_data = data.split(" ")
+                    key = []
+                    for i in range(1, len(split_data)):
+                        key.append(split_data[i])
 
-                if key[4] == 'False':
-                    run = False
+                    if key[4] == 'False':
+                        run = False
 
-                if self.init.connections == self.config.playersNumer:
+                    if self.init.connections == self.config.playersNumer:
 
-                    player.onServer(key)
-                    # run = player.onServer(key)
+                        player.onServer(key)
+                        # run = player.onServer(key)
 
-                    if player.lab == self.config.labs:
-                        self.win = True
-                        self.winner = name
-                        self.init.connections = 0
+                        if player.lab == self.config.labs:
+                            self.win = True
+                            self.winner = name
+                            self.init.connections = 0
 
-                    if restart:
-                        self.win = False
-                        self.winner = None
-                        restart = False
+                        if restart:
+                            self.win = False
+                            self.winner = None
+                            restart = False
+                        clientsList.updateValues(player.id, player.position, player.angle, player.speed,
+                                                 player.max_speed,
+                                                 player.acceleration, player.breaks, player.turn, player.lab,
+                                                 player.rect, self.time - player.bonusTime, self.game.showTimer,
+                                                 self.game.positionTimer, self.win, self.winner, self.init.connections)
+                        updated_data = {
+                            "id": player.id,
+                            "position": player.position,
+                            "angle": player.angle,
+                            "speed": player.speed,
+                            "max_speed": player.max_speed,
+                            "acceleration": player.acceleration,
+                            "breaks": player.breaks,
+                            "turn": player.turn,
+                            "lab": player.lab,
+                            # "rect": player.rect,
+                            "time": 0,
+                            "showTimer": self.game.showTimer,
+                            "posTimer": self.game.positionTimer,
+                            "win": self.win,
+                            "winner": self.winner,
+                            "connection": self.init.connections
+                        }
+                        db.child("players").child(name).update(updated_data)
+                    else:
+                        clientsList.updateValues(player.id, player.position, player.angle, player.speed,
+                                                 player.max_speed,
+                                                 player.acceleration, player.breaks, player.turn, player.lab,
+                                                 player.rect, 0, False,
+                                                 None, self.win, self.winner, self.init.connections)
+                        updated_data = {
+                            "id": player.id,
+                            "position": player.position,
+                            "angle": player.angle,
+                            "speed": player.speed,
+                            "max_speed": player.max_speed,
+                            "acceleration": player.acceleration,
+                            "breaks": player.breaks,
+                            "turn": player.turn,
+                            "lab": player.lab,
+                            # "rect": player.rect,
+                            "time": 0,
+                            "showTimer": self.game.showTimer,
+                            "posTimer": self.game.positionTimer,
+                            "win": self.win,
+                            "winner": self.winner,
+                            "connection": self.init.connections
+                        }
+                        db.child("players").child(name).update(updated_data)
+
+                elif data.split(" ")[0] == "time":
+                    start_time = pygame.time.get_ticks()
+                    self.time = (pygame.time.get_ticks() - start_time)
                     clientsList.updateValues(player.id, player.position, player.angle, player.speed, player.max_speed,
-                                             player.acceleration, player.breaks, player.turn, player.lab,
-                                             player.rect, self.time - player.bonusTime, self.game.showTimer,
-                                             self.game.positionTimer, self.win, self.winner, self.init.connections)
+                                             player.acceleration, player.breaks, player.turn, player.lab, player.rect,
+                                             self.time - player.bonusTime, self.game.showTimer, self.game.positionTimer,
+                                             self.win, self.winner, self.init.connections)
                     updated_data = {
                         "id": player.id,
                         "position": player.position,
@@ -269,11 +330,45 @@ class main_server:
                         "connection": self.init.connections
                     }
                     db.child("players").child(name).update(updated_data)
+
+                elif data.split(" ")[0] == "restart":
+                    restart = True
+                    player.restart()
+                    start_time = pygame.time.get_ticks()
+                    self.game.countTimer = self.config.timer['countTimer']
+                    self.game.showTimer = False
+                    self.game.positionTimer = None
+                    self.time = 0
+                    self.init.connections += 1
+                    clientsList.updateValues(player.id, player.position, player.angle, player.speed, player.max_speed,
+                                             player.acceleration, player.breaks, player.turn, player.lab, player.rect,
+                                             self.time - player.bonusTime, self.game.showTimer, self.game.positionTimer,
+                                             self.win, self.winner, self.init.connections)
+                    updated_data = {
+                        "id": player.id,
+                        "position": player.position,
+                        "angle": player.angle,
+                        "speed": player.speed,
+                        "max_speed": player.max_speed,
+                        "acceleration": player.acceleration,
+                        "breaks": player.breaks,
+                        "turn": player.turn,
+                        "lab": player.lab,
+                        # "rect": player.rect,
+                        "time": 0,
+                        "showTimer": self.game.showTimer,
+                        "posTimer": self.game.positionTimer,
+                        "win": self.win,
+                        "winner": self.winner,
+                        "connection": self.init.connections
+                    }
+                    db.child("players").child(name).update(updated_data)
+
                 else:
                     clientsList.updateValues(player.id, player.position, player.angle, player.speed, player.max_speed,
-                                             player.acceleration, player.breaks, player.turn, player.lab,
-                                             player.rect, 0, False,
-                                             None, self.win, self.winner, self.init.connections)
+                                             player.acceleration, player.breaks, player.turn, player.lab, player.rect,
+                                             0, self.game.showTimer, self.game.positionTimer, self.win, self.winner,
+                                             self.init.connections)
                     updated_data = {
                         "id": player.id,
                         "position": player.position,
@@ -294,93 +389,15 @@ class main_server:
                     }
                     db.child("players").child(name).update(updated_data)
 
-            elif data.split(" ")[0] == "time":
-                start_time = pygame.time.get_ticks()
-                self.time = (pygame.time.get_ticks() - start_time)
-                clientsList.updateValues(player.id, player.position, player.angle, player.speed, player.max_speed,
-                                         player.acceleration, player.breaks, player.turn, player.lab, player.rect,
-                                         self.time - player.bonusTime, self.game.showTimer, self.game.positionTimer,
-                                         self.win, self.winner, self.init.connections)
-                updated_data = {
-                    "id": player.id,
-                    "position": player.position,
-                    "angle": player.angle,
-                    "speed": player.speed,
-                    "max_speed": player.max_speed,
-                    "acceleration": player.acceleration,
-                    "breaks": player.breaks,
-                    "turn": player.turn,
-                    "lab": player.lab,
-                    # "rect": player.rect,
-                    "time": 0,
-                    "showTimer": self.game.showTimer,
-                    "posTimer": self.game.positionTimer,
-                    "win": self.win,
-                    "winner": self.winner,
-                    "connection": self.init.connections
-                }
-                db.child("players").child(name).update(updated_data)
-
-            elif data.split(" ")[0] == "restart":
-                restart = True
-                player.restart()
-                start_time = pygame.time.get_ticks()
-                self.game.countTimer = self.config.timer['countTimer']
-                self.game.showTimer = False
-                self.game.positionTimer = None
-                self.time = 0
-                self.init.connections += 1
-                clientsList.updateValues(player.id, player.position, player.angle, player.speed, player.max_speed,
-                                         player.acceleration, player.breaks, player.turn, player.lab, player.rect,
-                                         self.time - player.bonusTime, self.game.showTimer, self.game.positionTimer,
-                                         self.win, self.winner, self.init.connections)
-                updated_data = {
-                    "id": player.id,
-                    "position": player.position,
-                    "angle": player.angle,
-                    "speed": player.speed,
-                    "max_speed": player.max_speed,
-                    "acceleration": player.acceleration,
-                    "breaks": player.breaks,
-                    "turn": player.turn,
-                    "lab": player.lab,
-                    # "rect": player.rect,
-                    "time": 0,
-                    "showTimer": self.game.showTimer,
-                    "posTimer": self.game.positionTimer,
-                    "win": self.win,
-                    "winner": self.winner,
-                    "connection": self.init.connections
-                }
-                db.child("players").child(name).update(updated_data)
-
-            else:
-                clientsList.updateValues(player.id, player.position, player.angle, player.speed, player.max_speed,
-                                         player.acceleration, player.breaks, player.turn, player.lab, player.rect,
-                                         0, self.game.showTimer, self.game.positionTimer, self.win, self.winner,
-                                         self.init.connections)
-                updated_data = {
-                    "id": player.id,
-                    "position": player.position,
-                    "angle": player.angle,
-                    "speed": player.speed,
-                    "max_speed": player.max_speed,
-                    "acceleration": player.acceleration,
-                    "breaks": player.breaks,
-                    "turn": player.turn,
-                    "lab": player.lab,
-                    # "rect": player.rect,
-                    "time": 0,
-                    "showTimer": self.game.showTimer,
-                    "posTimer": self.game.positionTimer,
-                    "win": self.win,
-                    "winner": self.winner,
-                    "connection": self.init.connections
-                }
-                db.child("players").child(name).update(updated_data)
-
-            conn.send(pickle.dumps(self.init.players))
-            time.sleep(0.001)
+                conn.send(pickle.dumps(self.init.players))
+                time.sleep(0.001)
+            except:
+                print("[LOST CONNECTION]Name:", name, "Reconnecting....")
+                self.init.removePlayer(clientsList)  # remove client information from players list
+                self.game.players.remove(player)
+                conn.close()
+                t2 = threading.Thread(target=self.start_again, args=(_id,))
+                t2.start()
 
         # When user disconnects
         print("[DISCONNECT] Name:", name, ", Client Id:", _id, "disconnected")
@@ -392,5 +409,6 @@ class main_server:
             self.init.removePlayer(clientsList)  # remove client information from players list
             self.game.players.remove(player)
         conn.close()  # close connection
-main_server()
 
+
+main_server()

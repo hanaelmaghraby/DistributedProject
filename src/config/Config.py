@@ -1,10 +1,10 @@
 class Config:
-    playersNumer = 2
+    playersNumer = 1
     FPS = 100
     labs = 1 + 1  # Liczone od zera!
     line = {
                'positon': {
-                   'start': (502, 160)
+                'start': (502, 160)
                }
            },
     timer = {
@@ -17,8 +17,8 @@ class Config:
         }
     }
     player = {
-        'speed': 100,
-        'turn': 50,
+        'speed': 70,
+        'turn': 40,
         'acceleration': 5,
         'breaks': 0.05,
         'position': {

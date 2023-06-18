@@ -1,5 +1,3 @@
-
-
 class GameInit:
 
     def __init__(self):

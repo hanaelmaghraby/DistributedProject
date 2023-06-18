@@ -72,17 +72,11 @@ class DrawMap:
             self.showTimer = True
             self.positionTimer = self.config.timer['positon'][randint(0, 2)]
 
-        if self.showTimer:
-            self.showTimerBonus()
 
-        s = s - self.cur_player.player.bonusTime
         clock = self.font2.render('{:01d}:{:02d}'.format(m, s), False, self.WHITE)
         self.screen.blit(self.timeinfo, (200, 450))
         self.screen.blit(clock, (192, 455))
 
-    def showTimerBonus(self):
-        self.screen.blit(self.assets.timeBonus, self.positionTimer)
-        pass
 
     def firstDraw(self):
         self.assetsToDraw = [(self.assets.track, (0, 0)), (self.assets.start, (502, 160)), (self.assets.borders, (0, 0))]

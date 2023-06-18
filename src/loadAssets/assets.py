@@ -22,7 +22,6 @@ class Assets:
         self.height = self.track.get_height()
         self.grass = pygame.transform.scale(pygame.image.load("../../assets/grass20.png"), (self.width, self.height))
         self.dashboard = pygame.image.load("../../assets/dashboardmin600.png")
-        self.timeBonus = pygame.image.load("../../assets/timer1.png")
         self.car1 = pygame.image.load('../../assets/car600.' + str(1) + '.png')
         self.car1 = pygame.transform.scale(pygame.image.load('../../assets/car600.' + str(1) + '.png'), (self.car1.get_width() * 0.5, self.car1.get_height() * 0.5))
         self.car2 = pygame.image.load('../../assets/car600.' + str(2) + '.png')

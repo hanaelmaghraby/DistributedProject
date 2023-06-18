@@ -11,35 +11,6 @@ class MovesController:
         self.game = game
         self.player = player
 
-    """def on(self):
-        keys = pygame.key.get_pressed()
-        moved = False
-
-        if keys[pygame.K_w]:
-            moved = True
-            self.drive(1)
-
-        if keys[pygame.K_s]:
-            moved = True
-            self.drive(0)
-
-        if keys[pygame.K_a]:
-            self.rotate(1)
-
-        if keys[pygame.K_d]:
-            self.rotate(0)
-
-        if keys[pygame.K_SPACE]:
-            self.hand_brake()
-
-        if keys[pygame.K_ESCAPE]:
-            moved = True
-            self.game.run = False
-
-        if not moved:
-            self.reduce()
-    """
-
     def onServer(self, move):
 
         moved = False

@@ -22,7 +22,7 @@ class MyTableWidget(QWidget):
         super(QWidget, self).__init__(parent)
         self.conn = socket.socket()
         self.connected = False
-        #deployment ip"13.36.229.99"
+        #deployment ip"13.38.37.5"
         self.IP = "192.168.206.1"
         self.port = 450
         # tab UI
@@ -151,6 +151,9 @@ class MyTableWidget(QWidget):
 
     def connect_server(self):
         if self.connected == True:
+            self.g = start_game()
+            self.sg = threading.Thread(target=self.g.connect_game, args=(self.name,))
+            self.sg.start()
             return
         self.name = self.nameLineEdit.text()
         if self.name == "":
@@ -160,7 +163,7 @@ class MyTableWidget(QWidget):
         try:
             self.conn.connect((self.IP, self.port))
         except:
-            self.connStatus.setText("Status :" + " Refused")
+            self.connStatus.setText("Status :" + " Can't enter room")
             self.conn = socket.socket()
             return
         send_msg = bytes("{REGISTER}" + self.name, "utf-8")
@@ -339,6 +342,7 @@ class start_game():
                     self.run = False
 
             pygame.display.update()
+            time.sleep(0.1)
         #self.server.disconnect()
         pygame.quit()
         quit()

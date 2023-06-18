@@ -34,7 +34,6 @@ class Player:
         self.onFinish = False
         self.playing = True
         self.time_race = []
-        self.bonusTime = 0
         self.m_start = self.s_start = 0
 
     def restart(self):
@@ -47,7 +46,6 @@ class Player:
         self.onFinish = False
         self.playing = True
         self.time_race = []
-        self.bonusTime = 0
         self.m_start = self.s_start = 0
 
     def collide(self, borders, x1=0, y1=0):

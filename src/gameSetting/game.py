@@ -78,10 +78,6 @@ class Game:
             self.screen.blit(self.timeinfo, (200, 450))
             self.screen.blit(clock, (192, 455))
 
-
-        def showTimerBonus(self, position):
-            self.screen.blit(self.assets.timeBonus, position)
-
         def drawWinner(self, name):
             winner = self.font5.render(str("Winner is : "), False, self.BLUE)
             winner2 = self.font5.render(name, False, self.BLUE)
