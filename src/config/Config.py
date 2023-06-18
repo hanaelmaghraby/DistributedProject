@@ -1,5 +1,5 @@
 class Config:
-    playersNumer = 1
+    playersNumer = 4
     FPS = 100
     labs = 1 + 1  # Liczone od zera!
     line = {

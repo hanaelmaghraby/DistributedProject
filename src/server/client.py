@@ -17,13 +17,13 @@ from src.gameSetting.game import Game
 import pygame
 import src.server.network as network
 
+
 class MyTableWidget(QWidget):
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
         self.conn = socket.socket()
         self.connected = False
-        #deployment ip"13.36.229.99"
-        self.IP = "13.38.37.5"
+        self.IP = "15.237.43.244"
         self.port = 450
         # tab UI
         self.layout = QVBoxLayout(self)
@@ -163,7 +163,7 @@ class MyTableWidget(QWidget):
         try:
             self.conn.connect((self.IP, self.port))
         except:
-            self.connStatus.setText("Status :" + " Refused")
+            self.connStatus.setText("Status :" + " Can't enter room")
             self.conn = socket.socket()
             return
         send_msg = bytes("{REGISTER}" + self.name, "utf-8")
@@ -228,16 +228,6 @@ class start_game():
         self.server = network.Network()
         self.run = True
 
-    def restartMoves(self):
-        keys = pygame.key.get_pressed()
-        move = [False, False]
-        if keys[pygame.K_r]:
-            move[0] = True
-
-        if keys[pygame.K_q]:
-            move[1] = True
-        return move
-
     def moves(self):
         keys = pygame.key.get_pressed()
         move = [False, False, False, False, True]
@@ -300,6 +290,7 @@ class start_game():
                     pygame.display.update()
                     for event in pygame.event.get():
                         if event.type == pygame.QUIT:
+                            self.disconnect_game()
                             run = False
                 game.constDraw()
 
@@ -319,21 +310,12 @@ class start_game():
             cur_players = next((x for x in self.players if x.id == self.current_id))
             game.draw(game.screen, assets, cur_players.lab, cur_players.speed, cur_players.time)
 
-            if cur_players.showTimer:
-                game.showTimerBonus(cur_players.posTimer)
 
             for p in self.players:
                 game.drawCar(game.loadCar(p.id), p.angle, p.position)
 
             if cur_players.win and not start:
                 game.drawWinner(cur_players.name)
-                keys = self.restartMoves()
-                if keys[0]:
-                    self.players = self.server.send("restart")
-                    start = True
-
-                if keys[1]:
-                    self.run = False
                 game.draw_end_game_info()
 
             for event in pygame.event.get():
@@ -342,7 +324,6 @@ class start_game():
 
             pygame.display.update()
             time.sleep(0.1)
-
         pygame.quit()
         quit()
 
@@ -381,3 +362,4 @@ def run():
 
 if __name__ == "__main__":
     run()
+
