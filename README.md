@@ -1,4 +1,4 @@
-#Multi-Player Car Racing Game with Chat Feature
+## Multi-Player Car Racing Game with Chat Feature
 
 This is multi-player 2d car racing game with a chat feature - client-server architecture
 
