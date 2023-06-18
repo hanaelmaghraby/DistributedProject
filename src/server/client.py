@@ -260,7 +260,7 @@ class start_game():
 
         game = Game()
         game.screen = pygame.display.set_mode((game.assets.width, game.assets.height))
-        pygame.display.set_caption("Car Racing")
+        pygame.display.set_caption("Racing Car Game")
         assets = [(game.assets.track, (0, 0)), (game.assets.start, (502, 160)), (game.assets.borders, (0, 0))]
 
         game.constDraw()
